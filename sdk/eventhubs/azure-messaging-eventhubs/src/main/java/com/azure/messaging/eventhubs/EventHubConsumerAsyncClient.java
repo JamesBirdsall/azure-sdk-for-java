@@ -21,6 +21,8 @@ import com.azure.messaging.eventhubs.models.ReceiveOptions;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.SignalType;
+import reactor.core.scheduler.Scheduler;
 
 import java.io.Closeable;
 import java.util.Locale;
@@ -70,6 +72,7 @@ public class EventHubConsumerAsyncClient implements Closeable {
     private final MessageSerializer messageSerializer;
     private final String consumerGroup;
     private final int prefetchCount;
+    private final Scheduler scheduler;
     private final boolean isSharedConnection;
     /**
      * Keeps track of the open partition consumers keyed by linkName. The link name is generated as: {@code
@@ -80,13 +83,14 @@ public class EventHubConsumerAsyncClient implements Closeable {
 
     EventHubConsumerAsyncClient(String fullyQualifiedNamespace, String eventHubName,
         EventHubConnectionProcessor connectionProcessor, MessageSerializer messageSerializer, String consumerGroup,
-        int prefetchCount, boolean isSharedConnection) {
+        int prefetchCount, Scheduler scheduler, boolean isSharedConnection) {
         this.fullyQualifiedNamespace = fullyQualifiedNamespace;
         this.eventHubName = eventHubName;
         this.connectionProcessor = connectionProcessor;
         this.messageSerializer = messageSerializer;
         this.consumerGroup = consumerGroup;
         this.prefetchCount = prefetchCount;
+        this.scheduler = scheduler;
         this.isSharedConnection = isSharedConnection;
     }
 
@@ -325,15 +329,18 @@ public class EventHubConsumerAsyncClient implements Closeable {
                 return createPartitionConsumer(name, partitionId, startingPosition, receiveOptions);
             })
             .receive()
-            .doFinally(signalType -> {
-                logger.info("{}: Receiving completed. Partition: '{}'. Signal: '{}'", linkName, partitionId,
-                    signalType);
-                final EventHubPartitionAsyncConsumer consumer = openPartitionConsumers.remove(linkName);
+            .doOnCancel(() -> removeLink(linkName, partitionId, SignalType.CANCEL))
+            .doOnComplete(() -> removeLink(linkName, partitionId, SignalType.ON_COMPLETE))
+            .doOnError(error -> removeLink(linkName, partitionId, SignalType.ON_ERROR));
+    }
 
-                if (consumer != null) {
-                    consumer.close();
-                }
-            });
+    private void removeLink(String linkName, String partitionId, SignalType signalType) {
+        logger.info("{}: Receiving completed. Partition[{}]. Signal[{}]", linkName, partitionId, signalType);
+        final EventHubPartitionAsyncConsumer consumer = openPartitionConsumers.remove(linkName);
+
+        if (consumer != null) {
+            consumer.close();
+        }
     }
 
     private EventHubPartitionAsyncConsumer createPartitionConsumer(String linkName, String partitionId,
@@ -354,6 +361,6 @@ public class EventHubConsumerAsyncClient implements Closeable {
 
         return new EventHubPartitionAsyncConsumer(linkMessageProcessor, messageSerializer, getFullyQualifiedNamespace(),
             getEventHubName(), consumerGroup, partitionId, initialPosition,
-            receiveOptions.getTrackLastEnqueuedEventProperties());
+            receiveOptions.getTrackLastEnqueuedEventProperties(), scheduler);
     }
 }
