@@ -10,16 +10,20 @@ import com.microsoft.azure.eventhubs.PartitionReceiveHandler;
 import com.microsoft.azure.eventhubs.PartitionReceiver;
 import com.microsoft.azure.eventhubs.ReceiverDisconnectedException;
 import com.microsoft.azure.eventhubs.ReceiverOptions;
+import com.microsoft.azure.eventhubs.impl.EventHubClientImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 class PartitionPump extends Closable implements PartitionReceiveHandler {
@@ -29,7 +33,7 @@ class PartitionPump extends Closable implements PartitionReceiveHandler {
     private final CompletableFuture<Void> shutdownTriggerFuture;
     private final CompletableFuture<Void> shutdownFinishedFuture;
     private final Object processingSynchronizer;
-    private final Consumer<String> pumpManagerCallback;
+    private final BiConsumer<String, Integer> pumpManagerCallback;
     private EventHubClient eventHubClient = null;
     private PartitionReceiver partitionReceiver = null;
     private CloseReason shutdownReason;
@@ -37,8 +41,9 @@ class PartitionPump extends Closable implements PartitionReceiveHandler {
     private IEventProcessor processor = null;
     private PartitionContext partitionContext = null;
     private ScheduledFuture<?> leaseRenewerFuture = null;
+    private Integer serial = null;
 
-    PartitionPump(HostContext hostContext, CompleteLease lease, Closable parent, Consumer<String> pumpManagerCallback) {
+    PartitionPump(HostContext hostContext, CompleteLease lease, Closable parent, BiConsumer<String, Integer> pumpManagerCallback) {
         super(parent);
 
         this.hostContext = hostContext;
@@ -53,7 +58,7 @@ class PartitionPump extends Closable implements PartitionReceiveHandler {
         this.shutdownTriggerFuture = new CompletableFuture<Void>();
         this.shutdownFinishedFuture = this.shutdownTriggerFuture
                 .handleAsync((r, e) -> {
-                    this.pumpManagerCallback.accept(this.lease.getPartitionId());
+                    this.pumpManagerCallback.accept(this.lease.getPartitionId(), this.getSerial());
                     return cancelPendingOperations();
                 }, this.hostContext.getExecutor())
                 .thenComposeAsync((empty) -> cleanUpAll(this.shutdownReason), this.hostContext.getExecutor())
@@ -80,6 +85,22 @@ class PartitionPump extends Closable implements PartitionReceiveHandler {
                 }, this.hostContext.getExecutor());
 
         return shutdownFinishedFuture;
+    }
+
+    void setSerial(int serial) {
+        if (this.serial != null) {
+            TRACE_LOGGER.error(this.hostContext.withHostAndPartition(this.partitionContext, "PartitionPump serial number already set"));
+            throw new IllegalStateException("PartitionPump serial number already set");
+        }
+        this.serial = serial;
+    }
+
+    int getSerial() {
+        if (this.serial == null) {
+            TRACE_LOGGER.error(this.hostContext.withHostAndPartition(this.partitionContext, "PartitionPump serial number not set"));
+            throw new IllegalStateException("PartitionPump serial number not set");
+        }
+        return this.serial;
     }
 
     private void openProcessor() {
@@ -165,7 +186,7 @@ class PartitionPump extends Closable implements PartitionReceiveHandler {
         if (!getIsClosingOrClosed()) {
             int seconds = this.hostContext.getPartitionManagerOptions().getLeaseRenewIntervalInSeconds();
             this.leaseRenewerFuture = this.hostContext.getExecutor().schedule(() -> leaseRenewer(), seconds, TimeUnit.SECONDS);
-            TRACE_LOGGER.debug(this.hostContext.withHostAndPartition(this.lease, "scheduling leaseRenewer in " + seconds));
+            //TRACE_LOGGER.info(this.hostContext.withHostAndPartition(this.lease, "scheduling leaseRenewer in " + seconds));
         }
     }
 
@@ -421,10 +442,22 @@ class PartitionPump extends Closable implements PartitionReceiveHandler {
                         // Notify the general error handler rather than calling this.processor.onError so we can provide context (RENEWING_LEASE)
                         this.hostContext.getEventProcessorOptions().notifyOfException(this.hostContext.getHostName(), notifyWith, EventProcessorHostActionStrings.RENEWING_LEASE,
                                 this.lease.getPartitionId());
+                    } else {
+                        //TRACE_LOGGER.info(this.hostContext.withHostAndPartition(this.lease, "Renewed lease OK"));
                     }
 
                     if ((scheduleNext != null) && scheduleNext.booleanValue() && !this.leaseRenewerFuture.isCancelled() && !getIsClosingOrClosed()) {
                         scheduleLeaseRenewer();
+                    } else {
+                        String message = "RENEWER STOPPING scheduleNext: ";
+                        if (scheduleNext == null) {
+                            message += "null";
+                        } else {
+                            message += scheduleNext.booleanValue();
+                        }
+                        message += (" leaseRenewerFuture.isCancelled: " + this.leaseRenewerFuture.isCancelled());
+                        message += (" getIsClosingOrClosed: " + getIsClosingOrClosed());
+                        TRACE_LOGGER.info(this.hostContext.withHostAndPartition(this.lease, message));
                     }
                 }, this.hostContext.getExecutor());
     }
@@ -505,5 +538,9 @@ class PartitionPump extends Closable implements PartitionReceiveHandler {
         final Throwable capturedError = error;
         CompletableFuture.runAsync(() -> PartitionPump.this.processor.onError(PartitionPump.this.partitionContext, capturedError), this.hostContext.getExecutor())
                 .thenRunAsync(() -> internalShutdown(CloseReason.Shutdown, capturedError), this.hostContext.getExecutor());
+    }
+
+    public List<SocketChannel> getSockets() {
+        return (this.eventHubClient != null) ? ((EventHubClientImpl)this.eventHubClient).getSockets() : null;
     }
 }

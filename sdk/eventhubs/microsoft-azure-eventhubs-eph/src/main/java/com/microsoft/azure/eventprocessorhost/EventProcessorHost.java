@@ -19,8 +19,11 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.channels.SocketChannel;
 import java.security.InvalidKeyException;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
@@ -88,6 +91,10 @@ public final class EventProcessorHost {
         this.partitionManager = new PartitionManager(hostContext);
 
         TRACE_LOGGER.info(this.hostContext.withHost("New EventProcessorHost created."));
+    }
+
+    public HashMap<String, List<SocketChannel>> getSocketsByPartition() {
+        return this.partitionManager.getSocketsByPartition();
     }
 
     /**

@@ -253,7 +253,7 @@ public final class MessagingFactory extends ClientEntity implements AmqpConnecti
         return this.hostName;
     }
 
-    private Reactor getReactor() {
+    public Reactor getReactor() {
         synchronized (this.reactorLock) {
             return this.reactor;
         }

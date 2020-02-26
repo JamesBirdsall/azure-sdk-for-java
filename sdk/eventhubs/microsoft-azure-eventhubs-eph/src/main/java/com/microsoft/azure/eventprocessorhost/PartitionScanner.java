@@ -199,7 +199,7 @@ class PartitionScanner extends Closable {
                                             throwIfClosingOrClosed("PartitionScanner is shutting down");
                                             if (acquired) {
                                                 runningNeeded.decrementAndGet();
-                                                TRACE_LOGGER.debug(this.hostContext.withHostAndPartition(holder.getAcquiredLease().getPartitionId(), "Acquired unowned/expired"));
+                                                TRACE_LOGGER.info(this.hostContext.withHostAndPartition(holder.getAcquiredLease().getPartitionId(), "Acquired unowned/expired"));
                                                 if (this.leasesOwnedByOthers.containsKey(holder.getAcquiredLease().getPartitionId())) {
                                                     this.leasesOwnedByOthers.remove(holder.getAcquiredLease().getPartitionId());
                                                     this.unownedCount--;
@@ -299,7 +299,7 @@ class PartitionScanner extends Closable {
                     .thenAcceptAsync((acquired) -> {
                         throwIfClosingOrClosed("PartitionScanner is shutting down");
                         if (acquired) {
-                            TRACE_LOGGER.debug(this.hostContext.withHostAndPartition(holder.getAcquiredLease().getPartitionId(), "Stole lease"));
+                            TRACE_LOGGER.info(this.hostContext.withHostAndPartition(holder.getAcquiredLease().getPartitionId(), "Stole lease"));
                             this.addPump.accept(holder.getAcquiredLease());
                         }
                     }, this.hostContext.getExecutor());

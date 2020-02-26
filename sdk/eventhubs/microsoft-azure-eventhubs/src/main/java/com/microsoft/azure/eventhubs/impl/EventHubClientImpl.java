@@ -22,14 +22,23 @@ import com.microsoft.azure.eventhubs.ReceiverOptions;
 import com.microsoft.azure.eventhubs.RetryPolicy;
 import com.microsoft.azure.eventhubs.impl.MessagingFactory.MessagingFactoryBuilder;
 
+import org.apache.qpid.proton.reactor.Reactor;
+import org.apache.qpid.proton.reactor.ReactorChild;
+import org.apache.qpid.proton.reactor.Selectable;
+
 import java.io.IOException;
 import java.net.URI;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -355,6 +364,23 @@ public final class EventHubClientImpl extends ClientEntity implements EventHubCl
         }
 
         return rawdataFuture;
+    }
+
+    public List<SocketChannel> getSockets() {
+        List<SocketChannel> sockets = new LinkedList<SocketChannel>();
+
+        Reactor r = this.underlyingFactory.getReactor();
+        Set<ReactorChild> children = r.children();
+        for (ReactorChild rc : children) {
+            if (rc instanceof Selectable) {
+                SelectableChannel sc = ((Selectable)rc).getChannel();
+                if (sc instanceof SocketChannel) {
+                    sockets.add((SocketChannel)sc);
+                }
+            }
+        }
+
+        return sockets;
     }
 
     private class ManagementRetry implements Runnable {

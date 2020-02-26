@@ -39,8 +39,8 @@ public class InMemoryCheckpointManager implements ICheckpointManager {
 
     // This object is constructed before the EventProcessorHost and passed as an argument to
     // EventProcessorHost's constructor. So it has to get context info later.
-    public void initialize(HostContext hostContext) {
-        this.hostContext = hostContext;
+    public void initialize(EventProcessorHost host) {
+        this.hostContext = host.getHostContext();
     }
 
     @Override

@@ -11,7 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.channels.SocketChannel;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -34,6 +37,10 @@ class PartitionManager extends Closable {
         this.hostContext = hostContext;
     }
 
+    public HashMap<String, List<SocketChannel>> getSocketsByPartition() {
+        return (this.pumpManager != null) ? this.pumpManager.getSocketsByPartition() : null;
+    }
+    
     CompletableFuture<Void> cachePartitionIds() {
         CompletableFuture<Void> retval = null;
 
