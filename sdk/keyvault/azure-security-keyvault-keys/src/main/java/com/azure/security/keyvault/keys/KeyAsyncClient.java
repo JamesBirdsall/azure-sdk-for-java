@@ -204,6 +204,7 @@ public final class KeyAsyncClient {
 
     Mono<Response<KeyVaultKey>> createKeyWithResponse(CreateKeyOptions createKeyOptions, Context context) {
         Objects.requireNonNull(createKeyOptions, "The key create options parameter cannot be null.");
+        context = context == null ? Context.NONE : context;
         KeyRequestParameters parameters = new KeyRequestParameters()
             .setKty(createKeyOptions.getKeyType())
             .setKeyOps(createKeyOptions.getKeyOperations())
@@ -282,6 +283,7 @@ public final class KeyAsyncClient {
 
     Mono<Response<KeyVaultKey>> createRsaKeyWithResponse(CreateRsaKeyOptions createRsaKeyOptions, Context context) {
         Objects.requireNonNull(createRsaKeyOptions, "The Rsa key options parameter cannot be null.");
+        context = context == null ? Context.NONE : context;
         KeyRequestParameters parameters = new KeyRequestParameters()
             .setKty(createRsaKeyOptions.getKeyType())
             .setKeySize(createRsaKeyOptions.getKeySize())
@@ -367,6 +369,7 @@ public final class KeyAsyncClient {
 
     Mono<Response<KeyVaultKey>> createEcKeyWithResponse(CreateEcKeyOptions createEcKeyOptions, Context context) {
         Objects.requireNonNull(createEcKeyOptions, "The Ec key options cannot be null.");
+        context = context == null ? Context.NONE : context;
         KeyRequestParameters parameters = new KeyRequestParameters()
             .setKty(createEcKeyOptions.getKeyType())
             .setCurve(createEcKeyOptions.getCurveName())
@@ -480,6 +483,7 @@ public final class KeyAsyncClient {
 
     Mono<Response<KeyVaultKey>> importKeyWithResponse(ImportKeyOptions importKeyOptions, Context context) {
         Objects.requireNonNull(importKeyOptions, "The key import configuration parameter cannot be null.");
+        context = context == null ? Context.NONE : context;
         KeyImportRequestParameters parameters = new KeyImportRequestParameters()
             .setKey(importKeyOptions.getKey())
             .setHsm(importKeyOptions.isHardwareProtected())
@@ -505,9 +509,10 @@ public final class KeyAsyncClient {
      * @param version The version of the key to retrieve. If this is an empty String or null, this call is
      *     equivalent to calling {@link KeyAsyncClient#getKey(String)}, with the latest version being retrieved.
      * @return A {@link Mono} containing the requested {@link KeyVaultKey key}.
-     * @throws ResourceNotFoundException when a key with {@code name} and valid {@code version} doesn't exist in the key
-     *     vault.
-     * @throws HttpResponseException if an invalid {@code version} is specified.
+     * The content of the key is null if both {@code name} and {@code version} are null or empty.
+     * @throws ResourceNotFoundException when a key with {@code name} doesn't exist in the key vault or
+     * an empty/null {@code name} and a non null/empty {@code version} is provided.
+     * @throws HttpResponseException if a valid {@code name} and a non null/empty {@code version} is specified.
      */
     @ServiceMethod(returns = ReturnType.SINGLE)
     public Mono<KeyVaultKey> getKey(String name, String version) {
@@ -532,10 +537,11 @@ public final class KeyAsyncClient {
      * @param version The version of the key to retrieve. If this is an empty String or null, this call is
      *     equivalent to calling {@link KeyAsyncClient#getKey(String)}, with the latest version being retrieved.
      * @return A {@link Mono} containing a {@link Response} whose {@link Response#getValue() value} contains the requested
-     *     {@link KeyVaultKey key}.
-     * @throws ResourceNotFoundException when a key with {@code name} and valid {@code version} doesn't exist in the key
-     *     vault.
-     * @throws HttpResponseException if an invalid {@code version} is specified.
+     *     {@link KeyVaultKey key}. The content of the key is null if both {@code name} and {@code version}
+     *     are null or empty.
+     * @throws ResourceNotFoundException when a key with {@code name} doesn't exist in the key vault or
+     * an empty/null {@code name} and a non null/empty {@code version} is provided.
+     * @throws HttpResponseException if a valid {@code name} and a non null/empty {@code version} is specified.
      */
     @ServiceMethod(returns = ReturnType.SINGLE)
     public Mono<Response<KeyVaultKey>> getKeyWithResponse(String name, String version) {
@@ -547,6 +553,7 @@ public final class KeyAsyncClient {
     }
 
     Mono<Response<KeyVaultKey>> getKeyWithResponse(String name, String version, Context context) {
+        context = context == null ? Context.NONE : context;
         return service.getKey(vaultUrl, name, version, apiVersion, ACCEPT_LANGUAGE, CONTENT_TYPE_HEADER_VALUE,
             context.addData(AZ_TRACING_NAMESPACE_KEY, KEYVAULT_TRACING_NAMESPACE_VALUE))
             .doOnRequest(ignored -> logger.info("Retrieving key - {}", name))
@@ -565,9 +572,10 @@ public final class KeyAsyncClient {
      * {@codesnippet com.azure.security.keyvault.keys.async.keyclient.getKey#string}
      *
      * @param name The name of the key.
-     * @return A {@link Mono} containing the requested {@link KeyVaultKey key}.
-     * @throws ResourceNotFoundException when a key with {@code name} doesn't exist in the key vault.
-     * @throws HttpResponseException if an invalid {@code version} is specified.
+     * @return A {@link Mono} containing the requested {@link KeyVaultKey key}. The content of the key is null
+     * if {@code name} is null or empty.
+     * @throws ResourceNotFoundException when a key with non null/empty {@code name} doesn't exist in the key vault.
+     * @throws HttpResponseException if a non null/empty and an invalid {@code name} is specified.
      */
     @ServiceMethod(returns = ReturnType.SINGLE)
     public Mono<KeyVaultKey> getKey(String name) {
@@ -643,6 +651,7 @@ public final class KeyAsyncClient {
 
     Mono<Response<KeyVaultKey>> updateKeyPropertiesWithResponse(KeyProperties keyProperties, Context context, KeyOperation... keyOperations) {
         Objects.requireNonNull(keyProperties, "The key properties input parameter cannot be null.");
+        context = context == null ? Context.NONE : context;
         KeyRequestParameters parameters = new KeyRequestParameters()
             .setTags(keyProperties.getTags())
             .setKeyAttributes(new KeyRequestAttributes(keyProperties));
@@ -769,6 +778,7 @@ public final class KeyAsyncClient {
     }
 
     Mono<Response<DeletedKey>> getDeletedKeyWithResponse(String name, Context context) {
+        context = context == null ? Context.NONE : context;
         return service.getDeletedKey(vaultUrl, name, apiVersion, ACCEPT_LANGUAGE, CONTENT_TYPE_HEADER_VALUE,
             context.addData(AZ_TRACING_NAMESPACE_KEY, KEYVAULT_TRACING_NAMESPACE_VALUE))
             .doOnRequest(ignored -> logger.info("Retrieving deleted key - {}", name))
@@ -827,6 +837,7 @@ public final class KeyAsyncClient {
     }
 
     Mono<Response<Void>> purgeDeletedKeyWithResponse(String name, Context context) {
+        context = context == null ? Context.NONE : context;
         return service.purgeDeletedKey(vaultUrl, name, apiVersion, ACCEPT_LANGUAGE, CONTENT_TYPE_HEADER_VALUE,
             context.addData(AZ_TRACING_NAMESPACE_KEY, KEYVAULT_TRACING_NAMESPACE_VALUE))
             .doOnRequest(ignored -> logger.info("Purging deleted key - {}", name))
@@ -960,6 +971,7 @@ public final class KeyAsyncClient {
     }
 
     Mono<Response<byte[]>> backupKeyWithResponse(String name, Context context) {
+        context = context == null ? Context.NONE : context;
         return service.backupKey(vaultUrl, name, apiVersion, ACCEPT_LANGUAGE, CONTENT_TYPE_HEADER_VALUE,
             context.addData(AZ_TRACING_NAMESPACE_KEY, KEYVAULT_TRACING_NAMESPACE_VALUE))
             .doOnRequest(ignored -> logger.info("Backing up key - {}", name))
@@ -1033,6 +1045,7 @@ public final class KeyAsyncClient {
     }
 
     Mono<Response<KeyVaultKey>> restoreKeyBackupWithResponse(byte[] backup, Context context) {
+        context = context == null ? Context.NONE : context;
         KeyRestoreRequestParameters parameters = new KeyRestoreRequestParameters().setKeyBackup(backup);
         return service.restoreKey(vaultUrl, apiVersion, parameters, ACCEPT_LANGUAGE, CONTENT_TYPE_HEADER_VALUE,
             context.addData(AZ_TRACING_NAMESPACE_KEY, KEYVAULT_TRACING_NAMESPACE_VALUE))

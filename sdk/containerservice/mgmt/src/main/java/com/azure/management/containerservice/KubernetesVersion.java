@@ -1,20 +1,13 @@
-/**
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for
- * license information.
- */
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 package com.azure.management.containerservice;
 
 import com.azure.core.annotation.Fluent;
 import com.azure.core.util.ExpandableStringEnum;
 import com.fasterxml.jackson.annotation.JsonCreator;
-
 import java.util.Collection;
 
-
-/**
- * Defines values for Kubernetes versions.
- */
+/** Defines values for Kubernetes versions. */
 @Fluent()
 public final class KubernetesVersion extends ExpandableStringEnum<KubernetesVersion> {
     /** Static value Kubernetes version 1.5.8. */
@@ -85,6 +78,7 @@ public final class KubernetesVersion extends ExpandableStringEnum<KubernetesVers
 
     /**
      * Creates or finds a Kubernetes version from its string representation.
+     *
      * @param name a name to look for
      * @return the corresponding Kubernetes version
      */
@@ -93,9 +87,7 @@ public final class KubernetesVersion extends ExpandableStringEnum<KubernetesVers
         return fromString(name, KubernetesVersion.class);
     }
 
-    /**
-     * @return known Kubernetes version values
-     */
+    /** @return known Kubernetes version values */
     public static Collection<KubernetesVersion> values() {
         return values(KubernetesVersion.class);
     }

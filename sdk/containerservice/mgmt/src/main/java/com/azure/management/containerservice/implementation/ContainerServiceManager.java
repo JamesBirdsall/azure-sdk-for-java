@@ -1,11 +1,7 @@
-/**
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for
- * license information.
- */
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 package com.azure.management.containerservice.implementation;
-
 
 import com.azure.core.management.AzureEnvironment;
 import com.azure.core.management.serializer.AzureJacksonAdapter;
@@ -23,10 +19,9 @@ import com.azure.management.resources.fluentcore.policy.ProviderRegistrationPoli
 import com.azure.management.resources.fluentcore.policy.ResourceManagerThrottlingPolicy;
 import com.azure.management.resources.fluentcore.utils.SdkContext;
 
-/**
- * Entry point to Azure Container Service management.
- */
-public final class ContainerServiceManager extends Manager<ContainerServiceManager, ContainerServiceManagementClientImpl> {
+/** Entry point to Azure Container Service management. */
+public final class ContainerServiceManager
+    extends Manager<ContainerServiceManager, ContainerServiceManagementClientImpl> {
     // The service managers
     private ContainerServicesImpl containerServices;
     private KubernetesClustersImpl kubernetesClusters;
@@ -41,21 +36,24 @@ public final class ContainerServiceManager extends Manager<ContainerServiceManag
     }
 
     /**
-     * Creates an instance of ContainerServiceManager that exposes Azure Container Service resource management API entry points.
+     * Creates an instance of ContainerServiceManager that exposes Azure Container Service resource management API entry
+     * points.
      *
      * @param credentials the credentials to use
      * @param subscriptionId the subscription
      * @return the ContainerServiceManager
      */
     public static ContainerServiceManager authenticate(AzureTokenCredential credentials, String subscriptionId) {
-        return authenticate(new RestClientBuilder()
+        return authenticate(
+            new RestClientBuilder()
                 .withBaseUrl(credentials.getEnvironment(), AzureEnvironment.Endpoint.RESOURCE_MANAGER)
                 .withCredential(credentials)
                 .withSerializerAdapter(new AzureJacksonAdapter())
-//                .withResponseBuilderFactory(new AzureResponseBuilder.Factory())
+                //                .withResponseBuilderFactory(new AzureResponseBuilder.Factory())
                 .withPolicy(new ProviderRegistrationPolicy(credentials))
                 .withPolicy(new ResourceManagerThrottlingPolicy())
-                .buildClient(), subscriptionId);
+                .buildClient(),
+            subscriptionId);
     }
 
     /**
@@ -77,13 +75,12 @@ public final class ContainerServiceManager extends Manager<ContainerServiceManag
      * @param sdkContext the sdk context
      * @return the ContainerServiceManager
      */
-    public static ContainerServiceManager authenticate(RestClient restClient, String subscriptionId, SdkContext sdkContext) {
+    public static ContainerServiceManager authenticate(
+        RestClient restClient, String subscriptionId, SdkContext sdkContext) {
         return new ContainerServiceManager(restClient, subscriptionId, sdkContext);
     }
 
-    /**
-     * The interface allowing configurations to be set.
-     */
+    /** The interface allowing configurations to be set. */
     public interface Configurable extends AzureConfigurable<Configurable> {
         /**
          * Creates an instance of ContainerServiceManager that exposes Service resource management API entry points.
@@ -95,10 +92,8 @@ public final class ContainerServiceManager extends Manager<ContainerServiceManag
         ContainerServiceManager authenticate(AzureTokenCredential credentials, String subscriptionId);
     }
 
-    /**
-     * The implementation for Configurable interface.
-     */
-    private static final class ConfigurableImpl extends AzureConfigurableImpl<Configurable> implements  Configurable {
+    /** The implementation for Configurable interface. */
+    private static final class ConfigurableImpl extends AzureConfigurableImpl<Configurable> implements Configurable {
         @Override
         public ContainerServiceManager authenticate(AzureTokenCredential credentials, String subscriptionId) {
             return ContainerServiceManager.authenticate(buildRestClient(credentials), subscriptionId);
@@ -107,20 +102,17 @@ public final class ContainerServiceManager extends Manager<ContainerServiceManag
 
     private ContainerServiceManager(RestClient restClient, String subscriptionId, SdkContext sdkContext) {
         super(
-                restClient,
-                subscriptionId,
-                new ContainerServiceManagementClientBuilder()
-                    .host(restClient.getBaseUrl().toString())
-                    .pipeline(restClient.getHttpPipeline())
-                    .subscriptionId(subscriptionId)
-                    .build(),
-                sdkContext
-        );
+            restClient,
+            subscriptionId,
+            new ContainerServiceManagementClientBuilder()
+                .host(restClient.getBaseUrl().toString())
+                .pipeline(restClient.getHttpPipeline())
+                .subscriptionId(subscriptionId)
+                .buildClient(),
+            sdkContext);
     }
 
-    /**
-     * @return the Azure Container services resource management API entry point
-     */
+    /** @return the Azure Container services resource management API entry point */
     public ContainerServices containerServices() {
         if (this.containerServices == null) {
             this.containerServices = new ContainerServicesImpl(this);
@@ -128,9 +120,7 @@ public final class ContainerServiceManager extends Manager<ContainerServiceManag
         return this.containerServices;
     }
 
-    /**
-     * @return the Azure Kubernetes cluster resource management API entry point
-     */
+    /** @return the Azure Kubernetes cluster resource management API entry point */
     public KubernetesClusters kubernetesClusters() {
         if (this.kubernetesClusters == null) {
             this.kubernetesClusters = new KubernetesClustersImpl(this);
